@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard ZNT - Zona Nilai Tanah Interaktif</title>
+  <meta name="description"
+    content="Dashboard pemantauan progres survei dan pemetaan Zona Nilai Tanah (ZNT) interaktif berbasis Leaflet.js dan Chart.js.">
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="app-container">
+    <!-- SIDEBAR KIRI -->
+    <aside class="sidebar">
+
+      <!-- 🗺️ DASHBOARD ZNT HEADER -->
+      <header class="sidebar-header">
+        <div class="header-brand">
+          <div class="brand-icon">🗺️</div>
+          <div class="brand-text">
+            <h1>DASHBOARD ZNT JATENG 1 2026</h1>
+            <p class="brand-sub">(Kab. Brebes, Banyumas, Pekalongan, Pemalang dan Probolinggo)</p>
+          </div>
+        </div>
+      </header>
+
+      <div class="sidebar-scrollable">
+
+        <!-- ⚡ FILTER WILAYAH (KABUPATEN & SURVEYOR) -->
+        <section class="dash-card sort-panel-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-icon">🎛️</span>
+              <h2>FILTER WILAYAH</h2>
+            </div>
+            <button class="btn-reset-filter" id="btn-reset-filters" title="Reset Semua Filter">
+              <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+          </div>
+
+          <div class="sort-controls-grid">
+            <div class="sort-field">
+              <label for="sort-kabupaten"><i class="fa-solid fa-map-location-dot"></i> Kabupaten</label>
+              <select id="sort-kabupaten" class="select-sort">
+                <option value="all">Semua Kabupaten</option>
+              </select>
+            </div>
+
+            <div class="sort-field">
+              <label for="sort-surveyor"><i class="fa-solid fa-user-check"></i> Nama Surveyor</label>
+              <select id="sort-surveyor" class="select-sort">
+                <option value="default">Semua Surveyor</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="sort-status-indicator" id="sort-status-text">
+            <i class="fa-solid fa-filter"></i> Menampilkan semua data
+          </div>
+        </section>
+
+        <!-- 🎯 STATUS ZONA KAJIAN -->
+        <section class="dash-card status-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-icon">🎯</span>
+              <h2>STATUS ZONA KAJIAN</h2>
+            </div>
+            <span class="card-badge" id="zone-completion-pct">60%</span>
+          </div>
+
+          <div class="status-summary-grid">
+            <div class="summary-item total">
+              <div class="summary-label">Total Zona</div>
+              <div class="summary-value" id="stat-total-zona">5</div>
+            </div>
+            <div class="summary-item completed">
+              <div class="summary-label">Zona Selesai</div>
+              <div class="summary-value" id="stat-zona-selesai">3</div>
+            </div>
+            <div class="summary-item progress">
+              <div class="summary-label">Dalam Proses</div>
+              <div class="summary-value" id="stat-zona-proses">2</div>
+            </div>
+            <div class="summary-item pending">
+              <div class="summary-label">Belum Mulai</div>
+              <div class="summary-value" id="stat-zona-belum">0</div>
+            </div>
+          </div>
+
+          <div class="progress-bar-container">
+            <div class="progress-bar-track">
+              <div class="progress-segment seg-done" id="prog-seg-done" style="width: 60%;"></div>
+              <div class="progress-segment seg-prog" id="prog-seg-prog" style="width: 40%;"></div>
+              <div class="progress-segment seg-wait" id="prog-seg-wait" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <div class="zone-quick-list" id="zone-quick-list"></div>
+        </section>
+
+        <!-- 📈 PROGRES TITIK SAMPEL -->
+        <section class="dash-card sample-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-icon">📈</span>
+              <h2>PROGRES TITIK SAMPEL</h2>
+            </div>
+            <span class="card-badge info">30.0%</span>
+          </div>
+
+          <div class="sample-target-box">
+            <div class="target-row">
+              <span class="target-label"><i class="fa-solid fa-bullseye"></i> Target</span>
+              <span class="target-value"><strong id="target-points">500</strong> Titik</span>
+            </div>
+            <div class="target-divider"></div>
+            <div class="target-row">
+              <span class="target-label"><i class="fa-solid fa-circle-check"></i> Capaian</span>
+              <span class="target-value text-emerald"><strong id="achieved-points">150</strong> Titik</span>
+            </div>
+          </div>
+
+          <div class="chart-box donut-box">
+            <div class="donut-wrapper">
+              <canvas id="donutSampleChart"></canvas>
+              <div class="donut-center-label">
+                <span class="donut-number">150</span>
+                <span class="donut-sub">/ 500</span>
+              </div>
+            </div>
+            <div class="donut-legend">
+              <div class="legend-item"><span class="dot verified"></span> Terverifikasi (115)</div>
+              <div class="legend-item"><span class="dot draft"></span> Draft / Validasi (35)</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 📊 PROGRES HARIAN -->
+        <section class="dash-card daily-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-icon">📊</span>
+              <h2>PROGRES HARIAN</h2>
+            </div>
+            <span class="period-tag">7 Hari Terakhir</span>
+          </div>
+
+          <div class="chart-box bar-box">
+            <canvas id="barDailyChart" height="150"></canvas>
+          </div>
+        </section>
+
+        <!-- 📝 KELUH KESAH (Scroll) -->
+        <section class="dash-card complaint-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span class="card-icon">📝</span>
+              <h2>HAMBATAN</h2>
+            </div>
+          </div>
+          <p class="section-desc">Pembaruan langsung dari Google Sheets:</p>
+
+          <!-- SCROLLABLE LIST -->
+          <div class="complaint-scroll-container" id="complaints-list">
+            <div style="padding: 18px; text-align: center; color: #64748b;">
+              <i class="fa-solid fa-spinner fa-spin"></i> Menghubungkan ke Google Sheets...
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <footer class="sidebar-footer">
+        <span>assambled with antigravity by <a href="https://www.instagram.com/eniwidias_" target="_blank"
+            style="color: #818cf8; text-decoration: none; font-weight: 600;">@eniwidias_</a> | last update <span
+            id="last-update-time" style="color: #cbd5e1;">Memuat...</span></span>
+      </footer>
+    </aside>
+
+    <!-- AREA PETA INTERAKTIF (LEAFLET.JS) -->
+    <main class="map-container">
+
+      <!-- TOP MAP BAR -->
+      <div class="map-floating-top">
+        <div class="map-top-actions">
+          <div class="toggle-group">
+            <button class="btn-toggle active" id="toggle-polygons" title="Sembunyikan/Tampilkan Zona">
+              <i class="fa-solid fa-draw-polygon"></i> Zona
+            </button>
+          </div>
+
+          <div class="basemap-dropdown-wrapper">
+            <button class="btn-basemap" id="btn-basemap-toggle">
+              <i class="fa-solid fa-layer-group"></i>
+              <span>Basemap</span>
+              <i class="fa-solid fa-chevron-down caret-icon"></i>
+            </button>
+            <div class="basemap-menu" id="basemap-menu">
+              <div class="basemap-option active" data-layer="osm">
+                <div class="basemap-preview osm-preview"></div>
+                <div class="basemap-info">
+                  <strong>OpenStreetMap</strong>
+                  <small>Peta jalan standar</small>
+                </div>
+              </div>
+              <div class="basemap-option" data-layer="satellite">
+                <div class="basemap-preview sat-preview"></div>
+                <div class="basemap-info">
+                  <strong>Esri World Imagery</strong>
+                  <small>Citra satelit resolusi tinggi</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn-map-icon" id="btn-reset-zoom" title="Reset Pandangan Peta">
+            <i class="fa-solid fa-arrows-to-dot"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- LEAFLET MAP CANVAS -->
+      <div id="leaflet-map"></div>
+
+      <!-- LEGENDA PETA FLOATING -->
+      <div class="legend-floating-card" id="map-legend">
+        <div class="legend-header" id="legend-toggle-btn">
+          <div class="legend-title">
+            <i class="fa-solid fa-list-check"></i>
+            <span>Legenda</span>
+          </div>
+          <button class="btn-collapse" id="legend-collapse-icon">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+        <div class="legend-body" id="legend-body-content">
+          <div class="legend-group">
+            <span class="legend-group-title">Status Progres Zona Kajian</span>
+            <div class="legend-gradient-wrapper">
+              <div class="legend-gradient-bar"></div>
+              <div class="legend-gradient-labels">
+                <span class="grad-label green"><i class="fa-solid fa-circle-check"></i> Sudah Selesai</span>
+                <span class="grad-label yellow">Proses</span>
+                <span class="grad-label red"><i class="fa-solid fa-circle-xmark"></i> Belum Selesai</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- ============================================== -->
+  <!-- BARU: PapaParse untuk baca CSV Google Sheets -->
+  <!-- ============================================== -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <!-- Jateng GeoJSON data fallback -->
+  <script src="jateng-data.js"></script>
+  <!-- Custom JS -->
+  <script src="app.js"></script>
+</body>
+
+</html>
